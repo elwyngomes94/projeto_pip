@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { usePoliceData } from '../context';
-import { UserPlus, Trash2, Shield, User, Lock, Save, X } from 'lucide-react';
+import { UserPlus, Trash2, Shield, User, Lock, Save, X, Edit2 } from 'lucide-react';
+import { User as UserType } from '../types';
 
 export const UserManagement: React.FC = () => {
-  const { users, addUser, deleteUser, currentUser } = usePoliceData();
+  const { users, addUser, updateUser, deleteUser, currentUser } = usePoliceData();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   
   // Form State
   const [formData, setFormData] = useState({
@@ -14,10 +16,32 @@ export const UserManagement: React.FC = () => {
     role: 'user' as 'admin' | 'user'
   });
 
+  const handleAddNew = () => {
+    setEditingId(null);
+    setFormData({ name: '', username: '', password: '', role: 'user' });
+    setIsModalOpen(true);
+  };
+
+  const handleEdit = (user: UserType) => {
+    setEditingId(user.id);
+    setFormData({
+      name: user.name,
+      username: user.username,
+      password: user.password,
+      role: user.role
+    });
+    setIsModalOpen(true);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    addUser(formData);
+    if (editingId) {
+      updateUser(editingId, formData);
+    } else {
+      addUser(formData);
+    }
     setFormData({ name: '', username: '', password: '', role: 'user' });
+    setEditingId(null);
     setIsModalOpen(false);
   };
 
@@ -29,7 +53,7 @@ export const UserManagement: React.FC = () => {
           <p className="text-gray-900 font-medium">Controle de acesso ao sistema (Apenas Administradores).</p>
         </div>
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={handleAddNew}
           className="bg-blue-800 hover:bg-blue-900 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 transition-colors font-bold shadow-sm"
         >
           <UserPlus className="w-5 h-5" />
@@ -67,15 +91,24 @@ export const UserManagement: React.FC = () => {
                   </span>
                 </td>
                 <td className="px-6 py-4 text-right">
-                  {user.id !== currentUser?.id && user.username !== 'elwyn.gomes' && (
+                  <div className="flex justify-end gap-1">
                     <button
-                      onClick={() => deleteUser(user.id)}
-                      className="text-red-600 hover:text-red-800 transition-colors p-1"
-                      title="Remover Usuário"
+                      onClick={() => handleEdit(user)}
+                      className="text-blue-600 hover:text-blue-800 transition-colors p-1"
+                      title="Editar Usuário"
                     >
-                      <Trash2 className="w-5 h-5" />
+                      <Edit2 className="w-5 h-5" />
                     </button>
-                  )}
+                    {user.id !== currentUser?.id && user.username !== 'elwyn.gomes' && (
+                      <button
+                        onClick={() => deleteUser(user.id)}
+                        className="text-red-600 hover:text-red-800 transition-colors p-1"
+                        title="Remover Usuário"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -88,7 +121,9 @@ export const UserManagement: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-fade-in-up border border-gray-200">
             <div className="p-6 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-              <h3 className="text-xl font-black text-black">Cadastrar Usuário</h3>
+              <h3 className="text-xl font-black text-black">
+                {editingId ? 'Editar Usuário' : 'Cadastrar Usuário'}
+              </h3>
               <button onClick={() => setIsModalOpen(false)} className="text-gray-500 hover:text-gray-800">
                 <X className="w-5 h-5" />
               </button>
@@ -154,7 +189,7 @@ export const UserManagement: React.FC = () => {
                   className="flex-1 px-4 py-2 bg-blue-800 text-white font-bold rounded-lg hover:bg-blue-900 transition-colors shadow-sm flex items-center justify-center gap-2"
                 >
                   <Save className="w-4 h-4" />
-                  Salvar Usuário
+                  {editingId ? 'Salvar Alterações' : 'Salvar Usuário'}
                 </button>
               </div>
             </form>

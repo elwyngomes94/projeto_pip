@@ -8,6 +8,8 @@ import { OccurrenceTypes } from './pages/OccurrenceTypes';
 import { OccurrenceRegister } from './pages/OccurrenceRegister';
 import { Login } from './pages/Login';
 import { UserManagement } from './pages/UserManagement';
+import { Contestations } from './pages/Contestations';
+import { Profile } from './pages/Profile';
 
 const AppRoutes: React.FC = () => {
   const { currentUser } = usePoliceData();
@@ -16,17 +18,28 @@ const AppRoutes: React.FC = () => {
     return <Login />;
   }
 
+  const isAdmin = currentUser.role === 'admin';
+
   return (
     <Router>
       <Layout>
         <Routes>
+          {/* Public Route (Authenticated) */}
           <Route path="/" element={<Dashboard />} />
-          <Route path="/peculio" element={<Personnel />} />
-          <Route path="/tipos" element={<OccurrenceTypes />} />
-          <Route path="/registro" element={<OccurrenceRegister />} />
-          {currentUser.role === 'admin' && (
-             <Route path="/usuarios" element={<UserManagement />} />
+          <Route path="/minha-conta" element={<Profile />} />
+          <Route path="/contestacoes" element={<Contestations />} />
+          
+          {/* Admin Only Routes */}
+          {isAdmin && (
+            <>
+              <Route path="/peculio" element={<Personnel />} />
+              <Route path="/tipos" element={<OccurrenceTypes />} />
+              <Route path="/registro" element={<OccurrenceRegister />} />
+              <Route path="/usuarios" element={<UserManagement />} />
+            </>
           )}
+
+          {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>

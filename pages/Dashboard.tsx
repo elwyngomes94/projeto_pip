@@ -1,12 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { usePoliceData } from '../context';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { Trophy, TrendingUp, AlertTriangle, Filter, X, FileText, MessageCircle, CheckCircle, Calendar, User, Shield } from 'lucide-react';
+import { Trophy, TrendingUp, AlertTriangle, Filter, X, FileText, MessageCircle, CheckCircle, Calendar, User, Shield, AlertCircle, Send } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { OccurrenceLog } from '../types';
 
 export const Dashboard: React.FC = () => {
-  const { getRanking, logs, occurrenceTypes, officers } = usePoliceData();
+  const { getRanking, logs, occurrenceTypes, officers, currentUser } = usePoliceData();
   
   // Filter State
   const [startDate, setStartDate] = useState('');

@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, FileText, ClipboardList, Shield, LogOut, UserCog } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, ClipboardList, Shield, LogOut, UserCog, UserCircle, Gavel } from 'lucide-react';
 import { usePoliceData } from '../context';
 
 interface LayoutProps {
@@ -16,16 +16,50 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     navigate('/');
   };
 
-  const navItems = [
-    { to: '/', icon: LayoutDashboard, label: 'Painel Geral', roles: ['admin', 'user'] },
-    { to: '/peculio', icon: Users, label: 'Pecúlio (Efetivo)', roles: ['admin', 'user'] },
-    { to: '/tipos', icon: FileText, label: 'Tipos de Ocorrência', roles: ['admin', 'user'] },
-    { to: '/registro', icon: ClipboardList, label: 'Registro de Ocorrências', roles: ['admin', 'user'] },
+  // Define all navigation items with allowed roles
+  const allNavItems = [
+    { 
+      to: '/', 
+      icon: LayoutDashboard, 
+      label: 'Painel Geral', 
+      roles: ['admin', 'user'] 
+    },
+    { 
+      to: '/peculio', 
+      icon: Users, 
+      label: 'Pecúlio (Efetivo)', 
+      roles: ['admin'] // Restricted to Admin
+    },
+    { 
+      to: '/tipos', 
+      icon: FileText, 
+      label: 'Tipos de Ocorrência', 
+      roles: ['admin'] // Restricted to Admin
+    },
+    { 
+      to: '/registro', 
+      icon: ClipboardList, 
+      label: 'Registro de Ocorrências', 
+      roles: ['admin'] // Restricted to Admin
+    },
+    { 
+      to: '/contestacoes', 
+      icon: Gavel, 
+      label: 'Contestações', 
+      roles: ['admin', 'user'] 
+    },
+    { 
+      to: '/usuarios', 
+      icon: UserCog, 
+      label: 'Usuários', 
+      roles: ['admin'] // Restricted to Admin
+    },
   ];
 
-  if (currentUser?.role === 'admin') {
-    navItems.push({ to: '/usuarios', icon: UserCog, label: 'Usuários', roles: ['admin'] });
-  }
+  // Filter items based on current user role
+  const visibleNavItems = allNavItems.filter(item => 
+    currentUser && item.roles.includes(currentUser.role)
+  );
 
   return (
     <div className="flex h-screen bg-gray-100 overflow-hidden font-sans">
@@ -41,12 +75,17 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         
         {/* User Info */}
         <div className="px-6 py-4 bg-slate-800 border-b border-slate-700">
-           <p className="text-sm font-bold text-white truncate">{currentUser?.name}</p>
-           <p className="text-xs text-blue-300 uppercase font-bold">{currentUser?.role === 'admin' ? 'Administrador' : 'Usuário'}</p>
+           <div className="flex justify-between items-center mb-1">
+             <p className="text-sm font-bold text-white truncate max-w-[140px]">{currentUser?.name}</p>
+             <NavLink to="/minha-conta" title="Minha Conta">
+               <UserCircle className="w-5 h-5 text-gray-400 hover:text-white transition-colors" />
+             </NavLink>
+           </div>
+           <p className="text-xs text-blue-300 uppercase font-bold">{currentUser?.role === 'admin' ? 'Administrador' : 'Operador (Visualização)'}</p>
         </div>
 
         <nav className="flex-1 py-4 space-y-1 px-3">
-          {navItems.map((item) => (
+          {visibleNavItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

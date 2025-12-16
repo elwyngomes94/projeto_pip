@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Officer, OccurrenceType, OccurrenceLog, OfficerRanking, User } from './types';
+import { Officer, OccurrenceType, OccurrenceLog, OfficerRanking, User, Contestation } from './types';
 
 interface PoliceContextType {
   // Data
@@ -7,6 +7,7 @@ interface PoliceContextType {
   occurrenceTypes: OccurrenceType[];
   logs: OccurrenceLog[];
   users: User[];
+  contestations: Contestation[];
   currentUser: User | null;
 
   // Actions - Officers
@@ -26,7 +27,12 @@ interface PoliceContextType {
   login: (username: string, password: string) => boolean;
   logout: () => void;
   addUser: (user: Omit<User, 'id'>) => void;
+  updateUser: (id: string, updates: Partial<Omit<User, 'id'>>) => void;
   deleteUser: (id: string) => void;
+  
+  // Actions - Contestations
+  addContestation: (data: Omit<Contestation, 'id' | 'createdAt' | 'status'>) => void;
+  resolveContestation: (id: string, status: 'approved' | 'rejected', adminResponse?: string) => void;
 
   // Getters
   getRanking: (startDate?: string, endDate?: string) => OfficerRanking[];
@@ -241,11 +247,17 @@ export const PoliceProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     return saved ? JSON.parse(saved) : null;
   });
 
+  const [contestations, setContestations] = useState<Contestation[]>(() => {
+    const saved = localStorage.getItem('cipm_contestations');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   // --- Persist Data ---
   useEffect(() => localStorage.setItem('cipm_officers', JSON.stringify(officers)), [officers]);
   useEffect(() => localStorage.setItem('cipm_types', JSON.stringify(occurrenceTypes)), [occurrenceTypes]);
   useEffect(() => localStorage.setItem('cipm_logs', JSON.stringify(logs)), [logs]);
   useEffect(() => localStorage.setItem('cipm_users', JSON.stringify(users)), [users]);
+  useEffect(() => localStorage.setItem('cipm_contestations', JSON.stringify(contestations)), [contestations]);
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem('cipm_current_user', JSON.stringify(currentUser));
@@ -318,11 +330,43 @@ export const PoliceProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     setUsers(prev => [...prev, newUser]);
   };
 
+  const updateUser = (id: string, updates: Partial<Omit<User, 'id'>>) => {
+    setUsers(prev => prev.map(u => u.id === id ? { ...u, ...updates } : u));
+    
+    // Update current session if the updated user is the one logged in
+    if (currentUser && currentUser.id === id) {
+      setCurrentUser(prev => prev ? { ...prev, ...updates } : null);
+    }
+  };
+
   const deleteUser = (id: string) => {
     // Prevent deleting self or the hardcoded admin if we wanted to enforce strictness, 
     // but simply preventing deleting the last admin is usually good practice.
     // For now, just delete.
     setUsers(prev => prev.filter(u => u.id !== id));
+  };
+
+  // --- Contestation Actions ---
+  const addContestation = (data: Omit<Contestation, 'id' | 'createdAt' | 'status'>) => {
+    const newContestation: Contestation = {
+      ...data,
+      id: crypto.randomUUID(),
+      status: 'pending',
+      createdAt: Date.now()
+    };
+    setContestations(prev => [newContestation, ...prev]);
+  };
+
+  const resolveContestation = (id: string, status: 'approved' | 'rejected', adminResponse?: string) => {
+    const contestation = contestations.find(c => c.id === id);
+    if (!contestation) return;
+
+    // Note: Since contestations are now free-text, we DO NOT automatically delete logs.
+    // The admin must manually fix the records in the "Registro" tab if needed.
+    
+    setContestations(prev => prev.map(c => 
+      c.id === id ? { ...c, status, adminResponse, resolvedAt: Date.now() } : c
+    ));
   };
 
   // --- Ranking Logic ---
@@ -369,6 +413,7 @@ export const PoliceProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       occurrenceTypes,
       logs,
       users,
+      contestations,
       currentUser,
       addOfficer,
       deleteOfficer,
@@ -380,7 +425,10 @@ export const PoliceProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       login,
       logout,
       addUser,
+      updateUser,
       deleteUser,
+      addContestation,
+      resolveContestation,
       getRanking
     }}>
       {children}

@@ -35,3 +35,15 @@ export interface User {
   name: string;
   role: 'admin' | 'user';
 }
+
+export interface Contestation {
+  id: string;
+  userId: string; // Who opened the contestation
+  userName: string;
+  subject: string; // Motivo (ex: BOE errado, Pontuação incorreta)
+  content: string; // Detalhamento em texto
+  status: 'pending' | 'approved' | 'rejected';
+  adminResponse?: string; // Admin's justification for rejection
+  createdAt: number;
+  resolvedAt?: number;
+}
