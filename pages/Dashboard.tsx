@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { usePoliceData } from '../context';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { Trophy, TrendingUp, AlertTriangle, Filter, X, FileText, MessageCircle, CheckCircle, Calendar, User, Shield, AlertCircle, Send, ArrowRight } from 'lucide-react';
+import { Trophy, TrendingUp, AlertTriangle, Filter, X, FileText, MessageCircle, CheckCircle, Calendar, User, Shield, ArrowRight } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { OccurrenceLog } from '../types';
@@ -163,7 +163,31 @@ export const Dashboard: React.FC = () => {
     doc.save(`ranking_cipm_${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
-  const handleExportRankingWhatsApp = () => {
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (err) {
+      console.warn('Falha na API Clipboard, tentando fallback...', err);
+      try {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        return true;
+      } catch (err2) {
+        console.error('Fallback de cópia falhou', err2);
+        return false;
+      }
+    }
+  };
+
+  const handleExportRankingWhatsApp = async () => {
     let message = `*🏆 9ª CIPM - RANKING OPERACIONAL 🏆*\n`;
     
     if (startDate || endDate) {
@@ -193,14 +217,14 @@ export const Dashboard: React.FC = () => {
       message += `... e mais ${ranking.length - 20} policiais listados.\n`;
     }
 
-    navigator.clipboard.writeText(message)
-      .then(() => {
-        setSuccessMsg('Ranking copiado para o WhatsApp!');
-        setTimeout(() => setSuccessMsg(''), 3000);
-      })
-      .catch(err => {
-        console.error('Failed to copy: ', err);
-      });
+    const success = await copyToClipboard(message);
+    if (success) {
+      setSuccessMsg('Ranking copiado para o WhatsApp!');
+      setTimeout(() => setSuccessMsg(''), 3000);
+    } else {
+      setSuccessMsg('Erro ao copiar. Permissão negada.');
+      setTimeout(() => setSuccessMsg(''), 3000);
+    }
   };
 
   return (

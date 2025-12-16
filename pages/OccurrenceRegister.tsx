@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { usePoliceData } from '../context';
-import { CheckCircle, ClipboardList, Trash2, Clock, Search, X, Download, Save, Edit2, Filter, FileText, MessageCircle, Share2, Calculator } from 'lucide-react';
+import { CheckCircle, ClipboardList, Trash2, Clock, Search, X, Download, Save, Edit2, Filter, FileText, MessageCircle, Calculator } from 'lucide-react';
 import { OccurrenceLog } from '../types';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -145,6 +145,30 @@ export const OccurrenceRegister: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (err) {
+      console.warn('Falha na API Clipboard, tentando fallback...', err);
+      try {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        return true;
+      } catch (err2) {
+        console.error('Fallback de cópia falhou', err2);
+        return false;
+      }
+    }
+  };
+
   // --- Export Reports Logic ---
 
   const handleExportPDF = () => {
@@ -196,7 +220,7 @@ export const OccurrenceRegister: React.FC = () => {
     doc.save(`relatorio_cipm_${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
-  const handleExportWhatsApp = () => {
+  const handleExportWhatsApp = async () => {
     let message = `*🚨 9ª CIPM - RELATÓRIO DE OCORRÊNCIAS 🚨*\n`;
     message += `📅 Gerado em: ${new Date().toLocaleDateString('pt-BR')}\n`;
     if (filterDate) message += `📅 Ref. Data: ${new Date(filterDate).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}\n`;
@@ -219,15 +243,14 @@ export const OccurrenceRegister: React.FC = () => {
     // Count summary
     message += `\n📊 *Total de Registros:* ${filteredAndSortedLogs.length}`;
 
-    navigator.clipboard.writeText(message)
-      .then(() => {
-        setSuccessMsg('Relatório copiado para o WhatsApp!');
-        setTimeout(() => setSuccessMsg(''), 3000);
-      })
-      .catch(err => {
-        console.error('Failed to copy: ', err);
-        setSuccessMsg('Erro ao copiar relatório.');
-      });
+    const success = await copyToClipboard(message);
+    if (success) {
+      setSuccessMsg('Relatório copiado para o WhatsApp!');
+      setTimeout(() => setSuccessMsg(''), 3000);
+    } else {
+      setSuccessMsg('Erro ao copiar. Permissão negada.');
+      setTimeout(() => setSuccessMsg(''), 3000);
+    }
   };
 
   return (
